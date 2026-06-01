@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+
+backend/.env
+backend/.venv/
+backend/__pycache__/
+backend/**/*.pyc
+
+backend/uploads/
+backend/outputs/
+backend/temp/

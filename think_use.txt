@@ -1,0 +1,2 @@
+so i use vyapariworks gmail for the supabase database 
+and i use vyapariworks gmail for the firestore database 

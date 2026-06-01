@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pillow
+img2pdf
+google-generativeai
+python-dotenv
+firebase-admin
+supabase; python_version < "3.14"
+pdfplumber
+pymupdf
+pytesseract
+pdf2image

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Handwritten Assignment PDF Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="bg">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">HW</div>
+          <div>
+            <div class="brand-title">Handwritten Assignment Generator</div>
+            <div class="brand-sub">FastAPI + Gemini (optional) + Pillow</div>
+          </div>
+        </div>
+        <a class="health" id="healthLink" href="#" rel="noopener noreferrer">Backend health</a>
+      </header>
+
+      <section class="grid">
+        <form id="genForm" class="card form" autocomplete="off">
+          <h2>Generate PDF</h2>
+          <p class="muted">
+            Provide <b>either</b> manual questions or an assignment PDF. Manual questions take priority if both are
+            filled.
+          </p>
+
+          <div class="row">
+            <label>
+              <span>College template</span>
+              <select id="college" name="college" required>
+                <option value="oist">OIST</option>
+                <option value="oct">OCT</option>
+                <option value="default" selected>Default</option>
+              </select>
+            </label>
+            <label>
+              <span>Answer length</span>
+              <select id="answerLength" name="answer_length" required>
+                <option value="short">Short (~120 words)</option>
+                <option value="medium" selected>Medium (~250 words)</option>
+                <option value="long">Long (~450 words)</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <label>
+              <span>Student name</span>
+              <input id="name" name="name" type="text" placeholder="e.g., Rahul Sharma" required />
+            </label>
+            <label>
+              <span>Roll number</span>
+              <input id="rollNumber" name="roll_number" type="text" placeholder="e.g., 21CS105" required />
+            </label>
+          </div>
+
+          <label>
+            <span>Subject</span>
+            <input id="subject" name="subject" type="text" placeholder="e.g., Data Structures" required />
+          </label>
+
+          <label>
+            <span>Manual questions</span>
+            <textarea
+              id="questions"
+              name="questions"
+              rows="7"
+              placeholder="Q1) Define AI.\nQ2) Explain supervised learning.\nQ3) Write short note on overfitting."
+            ></textarea>
+            <span class="hint">Tips: Use Q1/Q.1/Question 1/1) patterns for best detection.</span>
+          </label>
+
+          <div class="upload">
+            <div class="upload-head">
+              <div>
+                <div class="upload-title">Or upload assignment PDF</div>
+                <div class="hint">Text-based PDFs extract best. OCR fallback requires extra system tools.</div>
+              </div>
+              <button type="button" class="btn btn-ghost" id="clearPdfBtn">Clear</button>
+            </div>
+            <input id="assignmentPdf" name="assignment_pdf" type="file" accept="application/pdf" />
+            <div id="pdfMeta" class="pdf-meta hidden"></div>
+          </div>
+
+          <div id="msg" class="msg hidden"></div>
+
+          <button id="generateBtn" type="submit" class="btn btn-primary">
+            <span class="btn-text">Generate PDF</span>
+            <span class="spinner hidden" aria-hidden="true"></span>
+          </button>
+
+          <div id="downloadBox" class="download hidden">
+            <div class="download-meta" id="downloadMeta"></div>
+            <button type="button" class="btn btn-success" id="downloadBtn">Download PDF</button>
+          </div>
+        </form>
+
+        <aside class="card preview">
+          <div class="preview-head">
+            <h2>Preview</h2>
+            <div class="muted">Selected blank sessional page</div>
+          </div>
+          <div class="preview-frame">
+            <img id="templatePreview" alt="Template preview" />
+          </div>
+          <div class="muted small">
+            You can replace the placeholder templates in:
+            <code>frontend/blank-sessional/</code> and <code>backend/templates/</code>.
+          </div>
+        </aside>
+      </section>
+
+      <footer class="footer">
+        <span class="muted small">
+          Local backend default: <code>http://127.0.0.1:8000</code> · Outputs served from <code>/outputs</code>
+        </span>
+      </footer>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+
