@@ -9,3 +9,14 @@ backend/**/*.pyc
 backend/uploads/
 backend/outputs/
 backend/temp/
+
+# Credentials and secrets
+*firebase-adminsdk*.json
+*.key
+*.pem
+
+# Local development files (keep locally, don't push to GitHub)
+/frontend/
+/README.md
+/index.html
+/think_use.txt
