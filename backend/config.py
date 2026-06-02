@@ -11,6 +11,7 @@ def _load_dotenv() -> None:
     except Exception:
         return
     load_dotenv()
+    load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
 
 
 def _as_bool(value: str | None, default: bool = False) -> bool:

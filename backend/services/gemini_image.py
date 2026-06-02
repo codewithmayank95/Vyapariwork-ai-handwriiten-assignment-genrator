@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import base64
+import logging
 import time
 from pathlib import Path
 from typing import Any
 
 from backend.config import Settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiImageError(RuntimeError):
@@ -14,11 +18,17 @@ class GeminiImageError(RuntimeError):
 
 class GeminiImageService:
     def __init__(self, settings: Settings) -> None:
+        logger.warning("Gemini debug: API key loaded: %s", "yes" if settings.gemini_api_key else "no")
+        logger.warning("Gemini debug: model name: %s", settings.gemini_image_model)
         if not settings.gemini_api_key:
             raise GeminiImageError("GEMINI_API_KEY is not configured.")
         self.settings = settings
         self._genai, self._types, self._errors = self._load_sdk()
-        self._client = self._genai.Client(api_key=settings.gemini_api_key)
+        try:
+            self._client = self._genai.Client(api_key=settings.gemini_api_key)
+        except Exception as exc:
+            logger.exception("Gemini debug: client initialization failed: %s", exc)
+            raise GeminiImageError(f"Gemini client initialization failed: {exc}") from exc
 
     def close(self) -> None:
         close = getattr(self._client, "close", None)
@@ -40,18 +50,27 @@ class GeminiImageService:
 
         for attempt in range(self.settings.image_retry_count + 1):
             try:
+                logger.warning(
+                    "Gemini debug: generating page %s/%s with model %s, attempt %s",
+                    page_number,
+                    total_pages,
+                    self.settings.gemini_image_model,
+                    attempt + 1,
+                )
                 response = self._client.models.generate_content(
                     model=self.settings.gemini_image_model,
                     contents=[prompt],
                     config=self._types.GenerateContentConfig(
-                        response_modalities=["IMAGE"],
+                        response_modalities=["TEXT", "IMAGE"],
                         image_config=self._types.ImageConfig(aspect_ratio="3:4"),
                     ),
                 )
+                logger.warning("Gemini debug: response type: %s", type(response).__name__)
                 self._save_first_image(response, output_path)
                 return output_path
             except Exception as exc:
                 last_error = exc
+                logger.exception("Gemini debug: generation attempt %s failed: %s", attempt + 1, exc)
                 if attempt >= self.settings.image_retry_count or not self._is_retryable(exc):
                     break
                 delay = self.settings.image_retry_delay_seconds * (attempt + 1)
@@ -61,7 +80,10 @@ class GeminiImageService:
 
     def _save_first_image(self, response: Any, output_path: Path) -> None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        for part in _response_parts(response):
+        parts = _response_parts(response)
+        logger.warning("Gemini debug: response parts count: %s", len(parts))
+        image_bytes_found = False
+        for part in parts:
             inline_data = getattr(part, "inline_data", None)
             if not inline_data:
                 continue
@@ -70,16 +92,22 @@ class GeminiImageService:
             if callable(as_image):
                 image = as_image()
                 image.save(output_path)
+                logger.warning("Gemini debug: image bytes found: yes")
                 return
 
             data = getattr(inline_data, "data", None)
             if data:
+                image_bytes_found = True
                 if isinstance(data, str):
                     data = base64.b64decode(data)
                 output_path.write_bytes(data)
+                logger.warning("Gemini debug: image bytes found: yes")
                 return
 
-        raise GeminiImageError("Gemini response did not include an image.")
+        logger.error("Gemini debug: image bytes found: %s", "yes" if image_bytes_found else "no")
+        raise GeminiImageError(
+            f"Gemini response did not include image bytes. Response type: {type(response).__name__}; parts: {len(parts)}"
+        )
 
     def _is_retryable(self, exc: Exception) -> bool:
         api_error = getattr(self._errors, "APIError", None)
@@ -95,6 +123,7 @@ class GeminiImageService:
             from google import genai
             from google.genai import errors, types
         except Exception as exc:
+            logger.exception("Gemini debug: SDK import failed: %s", exc)
             raise GeminiImageError("Install google-genai to enable AI image generation.") from exc
         return genai, types, errors
 

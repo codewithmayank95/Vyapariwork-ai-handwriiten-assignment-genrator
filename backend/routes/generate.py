@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,7 @@ from backend.utils.file_utils import cleanup_path, create_job_dir, make_job_id
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 _PROGRESS: dict[str, dict[str, Any]] = {}
 _PROGRESS_LOCK = threading.Lock()
@@ -50,6 +52,7 @@ async def generate_assignment(
     name: str | None = Form(None),
     roll_number: str | None = Form(None),
     college: str = Form("oist"),
+    allow_fallback: bool = Form(False),
     pdf: UploadFile | None = File(None),
     assignment_pdf: UploadFile | None = File(None),
     template_image: UploadFile | None = File(None),
@@ -105,8 +108,19 @@ async def generate_assignment(
         if selected_mode == "ultra" and SETTINGS.use_image_generation:
             try:
                 gemini = GeminiImageService(SETTINGS)
-            except GeminiImageError:
+            except GeminiImageError as exc:
+                logger.exception("Gemini setup failed: %s", exc)
+                if not allow_fallback:
+                    _set_progress(progress_id, status="error", percent=15, message=f"Gemini setup failed: {exc}")
+                    raise HTTPException(status_code=502, detail=f"Gemini setup failed: {exc}") from exc
                 used_fallback = True
+        elif selected_mode == "ultra":
+            message = "Gemini image generation is disabled. Set USE_IMAGE_GENERATION=true."
+            logger.error(message)
+            if not allow_fallback:
+                _set_progress(progress_id, status="error", percent=15, message=message)
+                raise HTTPException(status_code=503, detail=message)
+            used_fallback = True
         else:
             used_fallback = True
 
@@ -134,7 +148,21 @@ async def generate_assignment(
                         display_roll,
                         college_key,
                     )
-                except GeminiImageError:
+                except GeminiImageError as exc:
+                    logger.exception("Gemini page %s/%s failed: %s", page_index, total_pages, exc)
+                    if not allow_fallback:
+                        _set_progress(
+                            progress_id,
+                            status="error",
+                            page=page_index,
+                            total_pages=total_pages,
+                            percent=progress_base,
+                            message=f"Gemini failed on page {page_index}/{total_pages}: {exc}",
+                        )
+                        raise HTTPException(
+                            status_code=502,
+                            detail=f"Gemini image generation failed on page {page_index}/{total_pages}: {exc}",
+                        ) from exc
                     used_fallback = True
                     _set_progress(
                         progress_id,
