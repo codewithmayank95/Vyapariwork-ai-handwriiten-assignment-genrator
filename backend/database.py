@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from config import SETTINGS
+from backend.config import SETTINGS
 
 
 @dataclass
@@ -150,4 +150,3 @@ def get_job(job_id: str) -> Optional[Dict[str, Any]]:
         # fall back to local if present
         rec = LOCAL_JOBS.get(job_id)
         return rec.to_dict() if rec else None
-

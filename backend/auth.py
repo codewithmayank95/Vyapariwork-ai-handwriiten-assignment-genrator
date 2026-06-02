@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from config import SETTINGS
+from backend.config import SETTINGS
 
 
 class AuthError(Exception):
@@ -48,4 +48,3 @@ def verify_firebase_token(firebase_token: str | None) -> Optional[str]:
         return str(uid)
     except Exception as e:
         raise AuthError(f"Firebase token verification failed: {e}") from e
-

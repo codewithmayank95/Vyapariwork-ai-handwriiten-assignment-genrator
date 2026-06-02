@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..config import Settings
+from backend.config import Settings
 
 
 class GeminiImageError(RuntimeError):

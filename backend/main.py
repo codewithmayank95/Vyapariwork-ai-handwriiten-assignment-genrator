@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .config import FRONTEND_DIR, SETTINGS, ensure_folders
-from .routes.generate import router as generate_router
+from backend.config import FRONTEND_DIR, SETTINGS, ensure_folders
+from backend.routes.generate import router as generate_router
 
 
 def create_app() -> FastAPI:

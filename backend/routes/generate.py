@@ -10,13 +10,13 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from ..config import SETTINGS
-from ..services.fallback_renderer import render_handwriting_page
-from ..services.gemini_image import GeminiImageError, GeminiImageService
-from ..services.page_splitter import split_text_into_pages
-from ..services.pdf_builder import build_pdf_from_images
-from ..services.text_extractor import TextExtractionError, clean_text, extract_text_from_upload
-from ..utils.file_utils import cleanup_path, create_job_dir, make_job_id
+from backend.config import SETTINGS
+from backend.services.fallback_renderer import render_handwriting_page
+from backend.services.gemini_image import GeminiImageError, GeminiImageService
+from backend.services.page_splitter import split_text_into_pages
+from backend.services.pdf_builder import build_pdf_from_images
+from backend.services.text_extractor import TextExtractionError, clean_text, extract_text_from_upload
+from backend.utils.file_utils import cleanup_path, create_job_dir, make_job_id
 
 
 router = APIRouter()

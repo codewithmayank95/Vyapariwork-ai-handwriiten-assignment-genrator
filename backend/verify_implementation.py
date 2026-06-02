@@ -8,14 +8,14 @@ This script verifies all implementation requirements are met.
 import sys
 from pathlib import Path
 
-# Add backend to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root to path for package imports when run directly.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from generator import (
+from backend.generator import (
     PEN_COLOR, FONT_SIZE, HEADING_FONT_SIZE, LINE_GAP, 
     START_X, MAX_WIDTH, render_handwritten_pdf
 )
-from config import OUTPUTS_DIR, ensure_folders
+from backend.config import OUTPUTS_DIR, ensure_folders
 
 print("\n" + "=" * 80)
 print("  HANDWRITTEN ASSIGNMENT PDF GENERATOR - FINAL VERIFICATION REPORT")

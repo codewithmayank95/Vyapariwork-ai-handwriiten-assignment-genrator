@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Test script to verify Gemini API is working"""
 
-from config import SETTINGS
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from backend.config import SETTINGS
 
 print("=" * 60)
 print("GEMINI API TEST")

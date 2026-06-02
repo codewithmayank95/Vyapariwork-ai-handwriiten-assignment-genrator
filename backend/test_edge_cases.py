@@ -4,11 +4,11 @@
 import sys
 from pathlib import Path
 
-# Add backend to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root to path for package imports when run directly.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from generator import render_handwritten_pdf
-from config import OUTPUTS_DIR, ensure_folders
+from backend.generator import render_handwritten_pdf
+from backend.config import OUTPUTS_DIR, ensure_folders
 
 print("=" * 70)
 print(" EDGE CASE TESTING - ROBUSTNESS VERIFICATION")

@@ -5,7 +5,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-from ..config import TEMP_DIR
+from backend.config import TEMP_DIR
 
 
 _SAFE_ID_PATTERN = re.compile(r"[^a-zA-Z0-9_-]+")

@@ -9,7 +9,7 @@ from typing import Iterable, List, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
-from config import FONTS_DIR, OUTPUTS_DIR, TEMP_DIR, TEMPLATES_DIR, ensure_folders
+from backend.config import FONTS_DIR, OUTPUTS_DIR, TEMP_DIR, TEMPLATES_DIR, ensure_folders
 
 
 # =========================
@@ -417,4 +417,3 @@ def render_handwritten_pdf(
 
     pdf_url = f"/outputs/{output_name}"
     return pdf_url, len(page_paths)
-

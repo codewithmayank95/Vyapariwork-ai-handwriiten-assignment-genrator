@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from ..config import FONTS_DIR
+from backend.config import FONTS_DIR
 
 
 PAGE_WIDTH = 1240

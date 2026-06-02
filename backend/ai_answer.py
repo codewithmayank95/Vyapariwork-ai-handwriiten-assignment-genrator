@@ -4,7 +4,7 @@ import random
 import re
 from typing import List
 
-from config import SETTINGS
+from backend.config import SETTINGS
 
 
 WORD_TARGETS = {
@@ -138,4 +138,3 @@ def generate_answers(questions: List[str], answer_length: str) -> List[str]:
         ai_text = re.sub(r"^\\s*[-*]\\s+", "", ai_text, flags=re.MULTILINE).strip()
         answers.append(ai_text)
     return answers
-
