@@ -241,24 +241,17 @@ def render_handwritten_pdf(
     output_name = f"assignment_{job_id}.pdf"
     output_path = OUTPUTS_DIR / output_name
 
-    # Merge pages into PDF
-    try:
-        import img2pdf  # type: ignore
-
-        with open(output_path, "wb") as f:
-            f.write(img2pdf.convert([str(p) for p in page_paths]))
-    except Exception:
-        # Fallback: Pillow multi-page PDF
-        images = [Image.open(str(p)).convert("RGB") for p in page_paths]
-        if not images:
-            raise RuntimeError("No pages generated.")
-        first, rest = images[0], images[1:]
-        first.save(str(output_path), save_all=True, append_images=rest)
-        for im in images:
-            try:
-                im.close()
-            except Exception:
-                pass
+    # Convert PNG pages to PDF using Pillow
+    images = [Image.open(str(p)).convert("RGB") for p in page_paths]
+    if not images:
+        raise RuntimeError("No pages generated.")
+    first, rest = images[0], images[1:]
+    first.save(str(output_path), save_all=True, append_images=rest)
+    for im in images:
+        try:
+            im.close()
+        except Exception:
+            pass
 
     # Cleanup temp PNGs
     for p in page_paths:
