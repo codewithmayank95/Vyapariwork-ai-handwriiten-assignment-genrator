@@ -20,22 +20,51 @@ INK = (28, 74, 154)
 RULE = (176, 207, 238)
 MARGIN_RULE = (222, 108, 102)
 PAPER = (253, 253, 247)
+TEMPLATE_NAME_X = 305
+TEMPLATE_NAME_Y = 92
+TEMPLATE_ROLL_X = 900
+TEMPLATE_ROLL_Y = 108
+TEMPLATE_START_X = 205
+TEMPLATE_START_Y = 240
+TEMPLATE_MARGIN_RIGHT = 70
+TEMPLATE_BOTTOM_PADDING = 75
 
 
-def render_handwriting_page(page_text: str, output_path: Path, page_number: int, total_pages: int) -> Path:
-    image = Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), PAPER)
+def render_handwriting_page(
+    page_text: str,
+    output_path: Path,
+    page_number: int,
+    total_pages: int,
+    student_name: str = "",
+    roll_number: str = "",
+    college_name: str = "",
+    template_path: Path | None = None,
+) -> Path:
+    image = _create_base_page(template_path)
     draw = ImageDraw.Draw(image)
     body_font = _load_font(32)
     header_font = _load_font(36)
     small_font = _load_font(22)
 
-    _draw_paper(draw)
-    _draw_header(draw, header_font, small_font, page_number, total_pages)
-    _draw_body(draw, page_text, body_font, page_number)
+    if template_path:
+        _draw_template_metadata(draw, student_name, roll_number, header_font, small_font, page_number, total_pages)
+        _draw_template_body(draw, page_text, body_font, page_number, image.size)
+    else:
+        _draw_paper(draw)
+        _draw_header(draw, header_font, small_font, page_number, total_pages, student_name, roll_number, college_name)
+        _draw_body(draw, page_text, body_font, page_number)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     image.save(output_path, format="PNG", optimize=True)
     return output_path
+
+
+def _create_base_page(template_path: Path | None) -> Image.Image:
+    if not template_path:
+        return Image.new("RGB", (PAGE_WIDTH, PAGE_HEIGHT), PAPER)
+
+    with Image.open(template_path) as template:
+        return template.convert("RGB").resize((PAGE_WIDTH, PAGE_HEIGHT), Image.Resampling.LANCZOS)
 
 
 def _load_font(size: int) -> ImageFont.ImageFont:
@@ -68,11 +97,63 @@ def _draw_header(
     small_font: ImageFont.ImageFont,
     page_number: int,
     total_pages: int,
+    student_name: str,
+    roll_number: str,
+    college_name: str,
 ) -> None:
-    draw.text((MARGIN_LEFT, 74), "Assignment", font=header_font, fill=INK)
+    title = college_name if college_name and college_name.lower() not in {"other", "default"} else "Assignment"
+    draw.text((MARGIN_LEFT, 70), title.title(), font=header_font, fill=INK)
+    if student_name:
+        draw.text((MARGIN_LEFT, 116), student_name, font=small_font, fill=INK)
+    if roll_number:
+        draw.text((MARGIN_LEFT + 360, 116), f"Roll No. {roll_number}", font=small_font, fill=INK)
     page_label = f"Page {page_number}/{total_pages}"
     label_width = draw.textlength(page_label, font=small_font)
     draw.text((PAGE_WIDTH - MARGIN_RIGHT - label_width, 86), page_label, font=small_font, fill=(76, 89, 112))
+
+
+def _draw_template_metadata(
+    draw: ImageDraw.ImageDraw,
+    student_name: str,
+    roll_number: str,
+    header_font: ImageFont.ImageFont,
+    small_font: ImageFont.ImageFont,
+    page_number: int,
+    total_pages: int,
+) -> None:
+    if student_name:
+        draw.text((TEMPLATE_NAME_X, TEMPLATE_NAME_Y), student_name, font=header_font, fill=INK)
+    if roll_number:
+        draw.text((TEMPLATE_ROLL_X, TEMPLATE_ROLL_Y), roll_number, font=small_font, fill=INK)
+    page_label = f"{page_number}/{total_pages}"
+    draw.text((PAGE_WIDTH - 112, 160), page_label, font=small_font, fill=(76, 89, 112))
+
+
+def _draw_template_body(
+    draw: ImageDraw.ImageDraw,
+    page_text: str,
+    font: ImageFont.ImageFont,
+    page_number: int,
+    page_size: tuple[int, int],
+) -> None:
+    rng = random.Random(f"template-page-{page_number}-{len(page_text)}")
+    max_width = page_size[0] - TEMPLATE_START_X - TEMPLATE_MARGIN_RIGHT
+    y = TEMPLATE_START_Y
+    bottom_limit = page_size[1] - TEMPLATE_BOTTOM_PADDING
+
+    for paragraph in page_text.split("\n\n"):
+        wrapped_lines = _wrap_text(draw, paragraph.strip(), font, max_width)
+        if not wrapped_lines:
+            y += LINE_HEIGHT
+            continue
+        for line in wrapped_lines:
+            if y > bottom_limit:
+                return
+            x_jitter = rng.randint(-3, 4)
+            y_jitter = rng.randint(-2, 2)
+            draw.text((TEMPLATE_START_X + x_jitter, y - 31 + y_jitter), line, font=font, fill=_vary_ink(rng))
+            y += LINE_HEIGHT
+        y += int(LINE_HEIGHT * 0.45)
 
 
 def _draw_body(draw: ImageDraw.ImageDraw, page_text: str, font: ImageFont.ImageFont, page_number: int) -> None:

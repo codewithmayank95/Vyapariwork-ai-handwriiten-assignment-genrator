@@ -39,12 +39,27 @@ async def generate_assignment(
     text: str | None = Form(None),
     mode: str = Form("standard"),
     job_id: str | None = Form(None),
+    student_name: str | None = Form(None),
+    name: str | None = Form(None),
+    roll_number: str | None = Form(None),
+    college: str = Form("oist"),
     pdf: UploadFile | None = File(None),
     assignment_pdf: UploadFile | None = File(None),
+    template_image: UploadFile | None = File(None),
 ) -> FileResponse:
     progress_id = make_job_id(job_id)
     upload = pdf or assignment_pdf
     selected_mode = _normalize_mode(mode)
+    display_name = clean_text(student_name or name or "")
+    display_roll = clean_text(roll_number or "")
+    college_key = _normalize_college(college)
+
+    if not display_name:
+        raise HTTPException(status_code=400, detail="Student name is required.")
+    if not display_roll:
+        raise HTTPException(status_code=400, detail="Roll number is required.")
+    if college_key == "other" and not (template_image and template_image.filename):
+        raise HTTPException(status_code=400, detail="Upload your college blank sessional page for Other college.")
 
     has_text = bool(text and text.strip())
     has_pdf = bool(upload and upload.filename)
@@ -77,6 +92,7 @@ async def generate_assignment(
 
         total_pages = len(chunks)
         job_dir = create_job_dir(progress_id)
+        template_path = await _resolve_template_path(college_key, template_image, job_dir)
         image_paths: list[Path] = []
 
         if selected_mode == "ultra" and SETTINGS.use_image_generation:
@@ -101,7 +117,16 @@ async def generate_assignment(
                     message=f"Page {page_index}/{total_pages} generating...",
                 )
                 try:
-                    await asyncio.to_thread(gemini.generate_page_image, chunk, page_index, total_pages, page_path)
+                    await asyncio.to_thread(
+                        gemini.generate_page_image,
+                        chunk,
+                        page_index,
+                        total_pages,
+                        page_path,
+                        display_name,
+                        display_roll,
+                        college_key,
+                    )
                 except GeminiImageError:
                     used_fallback = True
                     _set_progress(
@@ -112,7 +137,17 @@ async def generate_assignment(
                         percent=progress_base,
                         message=f"Page {page_index}/{total_pages} using fallback renderer...",
                     )
-                    await asyncio.to_thread(render_handwriting_page, chunk, page_path, page_index, total_pages)
+                    await asyncio.to_thread(
+                        render_handwriting_page,
+                        chunk,
+                        page_path,
+                        page_index,
+                        total_pages,
+                        display_name,
+                        display_roll,
+                        college_key,
+                        template_path,
+                    )
             else:
                 _set_progress(
                     progress_id,
@@ -122,7 +157,17 @@ async def generate_assignment(
                     percent=progress_base,
                     message=f"Page {page_index}/{total_pages} rendering...",
                 )
-                await asyncio.to_thread(render_handwriting_page, chunk, page_path, page_index, total_pages)
+                await asyncio.to_thread(
+                    render_handwriting_page,
+                    chunk,
+                    page_path,
+                    page_index,
+                    total_pages,
+                    display_name,
+                    display_roll,
+                    college_key,
+                    template_path,
+                )
 
             image_paths.append(page_path)
             _set_progress(
@@ -191,6 +236,54 @@ def _normalize_mode(mode: str) -> str:
     if value not in aliases:
         raise HTTPException(status_code=400, detail="Mode must be standard or ultra.")
     return aliases[value]
+
+
+def _normalize_college(college: str) -> str:
+    value = (college or "oist").strip().lower()
+    aliases = {
+        "oist": "oist",
+        "oct": "oct",
+        "other": "other",
+        "default": "default",
+    }
+    if value not in aliases:
+        raise HTTPException(status_code=400, detail="College must be OIST, OCT, or Other.")
+    return aliases[value]
+
+
+async def _resolve_template_path(college: str, template_image: UploadFile | None, job_dir: Path) -> Path | None:
+    if college in {"oist", "oct", "default"}:
+        template_path = Path(__file__).resolve().parents[1] / "templates" / f"{college}.png"
+        if template_path.exists():
+            return template_path
+        return None
+
+    if template_image is None:
+        return None
+
+    content_type = (template_image.content_type or "").lower()
+    filename = template_image.filename or ""
+    allowed_suffixes = {".png", ".jpg", ".jpeg"}
+    if Path(filename).suffix.lower() not in allowed_suffixes and not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Blank sessional page must be a PNG or JPG image.")
+
+    data = await template_image.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Blank sessional page image is empty.")
+    if len(data) > SETTINGS.max_upload_bytes:
+        raise HTTPException(status_code=400, detail="Blank sessional page image is too large.")
+
+    output_path = job_dir / "custom_template.png"
+    output_path.write_bytes(data)
+    try:
+        from PIL import Image
+
+        with Image.open(output_path) as image:
+            image.verify()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Uploaded blank sessional page is not a valid image.") from exc
+
+    return output_path
 
 
 def _set_progress(job_id: str, **updates: Any) -> None:

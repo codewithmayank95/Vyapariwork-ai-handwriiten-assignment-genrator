@@ -25,8 +25,17 @@ class GeminiImageService:
         if callable(close):
             close()
 
-    def generate_page_image(self, page_text: str, page_number: int, total_pages: int, output_path: Path) -> Path:
-        prompt = _build_prompt(page_text, page_number, total_pages)
+    def generate_page_image(
+        self,
+        page_text: str,
+        page_number: int,
+        total_pages: int,
+        output_path: Path,
+        student_name: str = "",
+        roll_number: str = "",
+        college_name: str = "",
+    ) -> Path:
+        prompt = _build_prompt(page_text, page_number, total_pages, student_name, roll_number, college_name)
         last_error: Exception | None = None
 
         for attempt in range(self.settings.image_retry_count + 1):
@@ -103,7 +112,14 @@ def _response_parts(response: Any) -> list[Any]:
     return parts
 
 
-def _build_prompt(page_text: str, page_number: int, total_pages: int) -> str:
+def _build_prompt(
+    page_text: str,
+    page_number: int,
+    total_pages: int,
+    student_name: str,
+    roll_number: str,
+    college_name: str,
+) -> str:
     return f"""
 Create a single realistic portrait A4 student handwritten assignment page image.
 
@@ -115,6 +131,12 @@ Style requirements:
 - Professional college assignment style.
 - Natural pen pressure and small handwriting variation.
 - No extra diagrams, stickers, logos, or decorative borders.
+
+Header requirements:
+- College/session page style: {college_name or "college assignment sheet"}.
+- Write student name clearly in the top name area: {student_name or "Student"}.
+- Write roll number clearly in the roll number area: {roll_number or "Roll No."}.
+- Keep header neat like a college sessional page.
 
 Page context: page {page_number} of {total_pages}.
 
