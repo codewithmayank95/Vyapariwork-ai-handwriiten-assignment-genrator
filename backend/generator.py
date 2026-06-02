@@ -93,12 +93,11 @@ def _wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, 
     if cur:
         lines.append(" ".join(cur))
     return lines
- for realistic handwritten appearance.
-    Subtle jitter that doesn't affect readability.
+
+
+def _add_handwriting_jitter(x: int, y: int, line_idx: int) -> tuple[int, int, int]:
     """
-    jitter_x = random.randint(-1, 1)  # Reduced for better alignment
-    jitter_y = random.randint(-1, 1)  # Reduced for better alignment
-    jitter_gap = random.randint(-1, 1) if (line_idx % 4
+    Adds subtle random jitter to coordinates for realistic handwritten appearance.
     """
     jitter_x = random.randint(-2, 2)
     jitter_y = random.randint(-2, 2)
