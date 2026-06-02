@@ -108,46 +108,24 @@ def _extract_text_pymupdf(pdf_path: Path) -> str:
     return "\n".join(texts)
 
 
-def _ocr_pdf(pdf_path: Path) -> str:
-    from pdf2image import convert_from_path  # type: ignore
-    import pytesseract  # type: ignore
-
-    pages = convert_from_path(str(pdf_path), dpi=200)
-    texts: list[str] = []
-    for img in pages:
-        try:
-            t = pytesseract.image_to_string(img)
-        except Exception:
-            t = ""
-        if t.strip():
-            texts.append(t)
-    return "\n".join(texts)
-
-
 def extract_questions_from_pdf(pdf_path: str | Path) -> List[str]:
     path = Path(pdf_path)
     if not path.exists():
         raise FileNotFoundError(f"PDF not found: {path}")
 
     text = ""
-    # 1) Text-based extraction
+    # 1) Try pdfplumber text extraction
     try:
         text = _extract_text_pdfplumber(path)
     except Exception:
         text = ""
 
+    # 2) Fallback to PyMuPDF if needed
     if not text.strip():
         try:
             text = _extract_text_pymupdf(path)
         except Exception:
             text = ""
-
-    # 2) OCR fallback if text is missing/too short
-    if len(text.strip()) < 50:
-        try:
-            text = _ocr_pdf(path)
-        except Exception:
-            text = text or ""
 
     questions = parse_questions_from_text(text)
     return questions
