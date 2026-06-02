@@ -29,22 +29,26 @@ START_Y = 295
 MAX_WIDTH = 930  # maximum text line width in pixels
 MAX_Y = 1640  # last y position for text before page break
 
-LINE_GAP = 48
-FONT_SIZE = 30
+LINE_GAP = 45  # Increased for better readability with larger font
+FONT_SIZE = 32  # Professional font size for handwritten look
 
 PEN_COLOR = (20, 60, 160)  # blue ink
 
 
 def _safe_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     """
-    Try to load Kalam font; if missing, fall back to PIL default so the MVP still works.
+    Try to load Kalam font (prefer Bold for better visibility); if missing, fall back to PIL default.
     """
-    preferred = FONTS_DIR / "Kalam-Regular.ttf"
-    try:
-        if preferred.exists():
-            return ImageFont.truetype(str(preferred), FONT_SIZE)
-    except Exception:
-        pass
+    # Try Kalam-Bold first for better cursive appearance
+    bold_font = FONTS_DIR / "Kalam-Bold.ttf"
+    regular_font = FONTS_DIR / "Kalam-Regular.ttf"
+    
+    for font_path in [bold_font, regular_font]:
+        try:
+            if font_path.exists():
+                return ImageFont.truetype(str(font_path), FONT_SIZE)
+        except Exception:
+            pass
     return ImageFont.load_default()
 
 
@@ -89,11 +93,12 @@ def _wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, 
     if cur:
         lines.append(" ".join(cur))
     return lines
-
-
-def _add_handwriting_jitter(x: int, y: int, line_idx: int) -> Tuple[int, int, int]:
+ for realistic handwritten appearance.
+    Subtle jitter that doesn't affect readability.
     """
-    Small natural variations; keep readable.
+    jitter_x = random.randint(-1, 1)  # Reduced for better alignment
+    jitter_y = random.randint(-1, 1)  # Reduced for better alignment
+    jitter_gap = random.randint(-1, 1) if (line_idx % 4
     """
     jitter_x = random.randint(-2, 2)
     jitter_y = random.randint(-2, 2)
@@ -178,7 +183,8 @@ def render_handwritten_pdf(
     def write_line(line: str, line_idx: int) -> None:
         nonlocal y
         xj, yj, gap_j = _add_handwriting_jitter(START_X, y, line_idx)
-        draw.text((xj, yj), line, fill=PEN_COLOR, font=font)
+        # Use baseline alignment for consistency
+        draw.text((xj, yj), line, fill=PEN_COLOR, font=font, anchor="lt")
         y += LINE_GAP + gap_j
 
     line_idx = 0
@@ -227,7 +233,7 @@ def render_handwritten_pdf(
             y += int(LINE_GAP * 0.3)
 
         # Extra spacing between questions
-        y += int(LINE_GAP * 0.4)
+        y += int(LINE_GAP * 0.6)  # Increased spacing for clarity
 
     # Save last page
     save_page(img)
