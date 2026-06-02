@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
@@ -34,6 +34,13 @@ def get_progress(job_id: str) -> dict[str, Any]:
     return progress
 
 
+@router.options("/api/generate")
+@router.options("/generate-pdf")
+def generation_options() -> Response:
+    return Response(status_code=204)
+
+
+@router.post("/generate-pdf")
 @router.post("/api/generate")
 async def generate_assignment(
     text: str | None = Form(None),

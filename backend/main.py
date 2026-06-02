@@ -17,12 +17,16 @@ def create_app() -> FastAPI:
         version="2.0.0",
     )
 
-    allow_origins = list(SETTINGS.cors_origins) or ["*"]
+    configured_origins = list(SETTINGS.cors_origins)
+    allow_origins = configured_origins or ["*"]
+    if configured_origins and "null" not in allow_origins:
+        allow_origins.append("null")
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
         allow_credentials=False,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
         expose_headers=["X-Job-Id", "X-Total-Pages", "X-Generation-Mode", "X-Fallback-Used"],
     )
